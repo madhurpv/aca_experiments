@@ -36,16 +36,18 @@ int main()
     }
 
     long long readingInt = 0;
+    volatile const char* target = (volatile const char*) pBuf;
 
     while(1){
-        szMsg[0] = '0' + readingInt%10;
-        CopyMemory((void *)pBuf, szMsg, ((strlen(szMsg)+1) * sizeof(char)));
+        //szMsg[0] = '0' + readingInt%10;
+        //CopyMemory((void *)pBuf, szMsg, ((strlen(szMsg)+1) * sizeof(char)));
+        char a = *target;
         readingInt++;
-        if(readingInt%20000000==0){
+        if(readingInt%2000000==0){
             printf("- ");
-            Sleep(100);
+            Sleep(300);
             //readingInt = 1;
-            printf("%lld\n", readingInt/20000000);
+            printf("%lld\n", readingInt/2000000);
         }
     }
 

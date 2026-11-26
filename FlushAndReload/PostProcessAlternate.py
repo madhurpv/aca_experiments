@@ -12,7 +12,7 @@ for i in range(len(timings)):
 
 # Initial threshold from your previous experiments
 THRESHOLD = 910
-THRESHOLD = 300
+THRESHOLD = 270
 
 # Change this according to your reader's sampling interval.
 # With Sleep(1), 100 samples are approximately 100 ms.

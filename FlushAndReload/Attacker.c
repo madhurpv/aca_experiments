@@ -97,13 +97,13 @@ int main()
    }
 
    // Print after all measurements
-    //FILE *fptr = fopen("alternatetimings.txt", "w");
+    FILE *fptr = fopen("alternatetimings.txt", "w");
     for (int i = 0; i < SAMPLES; i++)
     {
-        //fprintf(fptr, "%llu\n", (unsigned long long)timings[i]);
-        printf("%llu\n", (unsigned long long)timings[i]);
+        fprintf(fptr, "%llu\n", (unsigned long long)timings[i]);
+        //printf("%llu\n", (unsigned long long)timings[i]);
     }
-    //fclose(fptr);
+    fclose(fptr);
 
    UnmapViewOfFile(pBuf);
    CloseHandle(hMapFile);
