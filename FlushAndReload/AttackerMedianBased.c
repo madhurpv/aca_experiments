@@ -12,7 +12,7 @@
 
 
 #define SLEEP_TIME_MICROSEC 10
-#define THRESHOLD_SCALING 0.7
+#define THRESHOLD_SCALING 0.75
 #define TESTING_THRESHOLD_SAMPLES 1
 
 
@@ -238,7 +238,7 @@ int main()
 
         //uint64_t current_median = findFirstQuartile(testing_timings, TESTING_SAMPLES);
         int below_threshold = count_below_threshold(testing_timings, TESTING_SAMPLES, median*THRESHOLD_SCALING);
-        if(below_threshold > TESTING_THRESHOLD_SAMPLES){
+        if(below_threshold >= TESTING_THRESHOLD_SAMPLES){
             //printf("Victim highly likely accessing memory!! ");
             printf("Victim highly likely accessing memory!! Current below_threshold %" PRIu64 "\n", below_threshold);
         }
