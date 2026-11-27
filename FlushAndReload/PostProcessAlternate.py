@@ -7,8 +7,8 @@ timings = np.loadtxt("alternatetimings.txt")
 timings = np.asarray(timings).flatten()
 
 for i in range(len(timings)):
-    if timings[i]>5000:
-        timings[i] = 5000
+    if timings[i]>2000:
+        timings[i] = 2000
 
 # Initial threshold from your previous experiments
 THRESHOLD = 910
@@ -30,6 +30,8 @@ print("P75:", np.percentile(timings, 75))
 print("P90:", np.percentile(timings, 90))
 print("P99:", np.percentile(timings, 99))
 
+THRESHOLD = np.median(timings)*0.8
+
 # Identify relatively fast reloads
 fast = timings < THRESHOLD
 
@@ -43,8 +45,8 @@ print("Fast reload percentage:", 100 * np.mean(fast))
 # 1. Timing vs sample number
 # ------------------------------------------------
 
-plt.figure(figsize=(14, 5))
-plt.plot(timings, linewidth=0.7)
+plt.figure(figsize=(14, 6))
+plt.plot(timings, linewidth=0.2)
 plt.axhline(THRESHOLD, linestyle="--",
             label=f"Threshold = {THRESHOLD}")
 plt.xlabel("Sample number")

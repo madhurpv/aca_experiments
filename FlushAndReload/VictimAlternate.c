@@ -37,17 +37,19 @@ int main()
 
     long long readingInt = 0;
     volatile const char* target = (volatile const char*) pBuf;
+    int checksum = 0;
 
     while(1){
         //szMsg[0] = '0' + readingInt%10;
         //CopyMemory((void *)pBuf, szMsg, ((strlen(szMsg)+1) * sizeof(char)));
         char a = *target;
+        checksum ^= a;
         readingInt++;
-        if(readingInt%2000000==0){
+        if(readingInt%200000000==0){
             printf("- ");
-            Sleep(300);
+            Sleep(1000);
             //readingInt = 1;
-            printf("%lld\n", readingInt/2000000);
+            printf("%lld\n", readingInt/200000000);
         }
     }
 
