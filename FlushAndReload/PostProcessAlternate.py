@@ -30,7 +30,8 @@ print("P75:", np.percentile(timings, 75))
 print("P90:", np.percentile(timings, 90))
 print("P99:", np.percentile(timings, 99))
 
-THRESHOLD = np.median(timings)*0.8
+THRESHOLD = np.median(timings)*0.7
+#THRESHOLD = 127
 
 # Identify relatively fast reloads
 fast = timings < THRESHOLD

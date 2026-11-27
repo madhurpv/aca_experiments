@@ -45,11 +45,11 @@ int main()
         char a = *target;
         checksum ^= a;
         readingInt++;
-        if(readingInt%200000000==0){
+        if(readingInt%200000==0){
             printf("- ");
             Sleep(1000);
             //readingInt = 1;
-            printf("%lld\n", readingInt/200000000);
+            printf("%lld\n", readingInt/200000);
         }
     }
 

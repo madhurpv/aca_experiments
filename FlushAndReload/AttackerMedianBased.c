@@ -12,7 +12,8 @@
 
 
 #define SLEEP_TIME_MICROSEC 10
-#define THRESHOLD_SCALING 0.8
+#define THRESHOLD_SCALING 0.7
+#define TESTING_THRESHOLD_SAMPLES 1
 
 
 #define BUF_SIZE 2
@@ -61,8 +62,28 @@ uint64_t findFirstQuartile(uint64_t arr[], uint64_t n) {
     // 1. Sort the array in ascending order
     qsort(arr, n, sizeof(uint64_t), compare);
 
-    return arr[n / 4];
+    return arr[n / 10];
 }
+
+
+int count_below_threshold(uint64_t testing_timings[], int TESTING_SAMPLES, int threshold){
+    int below_threshold = 0;
+    for(int i=0; i<TESTING_SAMPLES; i++){
+        if(testing_timings[i]<threshold){
+            below_threshold++;
+        }
+    }
+    return below_threshold;
+}
+
+
+
+
+
+
+
+
+
 
 
 
@@ -181,7 +202,7 @@ int main()
 
     printf("\nStarting spying on victim...\n");
 
-    #define TESTING_SAMPLES 600
+    #define TESTING_SAMPLES 100
     uint64_t testing_timings[TESTING_SAMPLES];
 
     while(1){
@@ -215,23 +236,17 @@ int main()
             //printf("%llu\n", (unsigned long long)timings[i]);
         }
 
-        uint64_t current_median = findFirstQuartile(testing_timings, TESTING_SAMPLES);
-        if(current_median < median*THRESHOLD_SCALING){
-            printf("Victim highly likely accessing memory!! ");
+        //uint64_t current_median = findFirstQuartile(testing_timings, TESTING_SAMPLES);
+        int below_threshold = count_below_threshold(testing_timings, TESTING_SAMPLES, median*THRESHOLD_SCALING);
+        if(below_threshold > TESTING_THRESHOLD_SAMPLES){
+            //printf("Victim highly likely accessing memory!! ");
+            printf("Victim highly likely accessing memory!! Current below_threshold %" PRIu64 "\n", below_threshold);
         }
-        printf("Current Median %" PRIu64 "\n", current_median);
+        //printf("Current Median %" PRIu64 "\n", current_median);
 
 
     }
 
-    // Print after all measurements
-    /*FILE *fptr = fopen("alternatetimings.txt", "w");
-    for (int i = 0; i < SAMPLES; i++)
-    {
-        fprintf(fptr, "%llu\n", (unsigned long long)timings[i]);
-        //printf("%llu\n", (unsigned long long)timings[i]);
-    }
-    fclose(fptr);*/
 
    UnmapViewOfFile(pBuf);
    CloseHandle(hMapFile);
